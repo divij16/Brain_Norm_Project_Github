@@ -17,8 +17,8 @@ clear; clc;
 
 %% ---------------- 0) USER SETTINGS -------------------------
 
-in_snirf = '/Users/divijnalge/Library/CloudStorage/OneDrive-NanyangTechnologicalUniversity/ntu/Brain Norm/Brain_Norm_Files/snirf_files_with_correct_stim_events_BNDY/sub-bndy_ses-tp1_task-arith_run-1_nirs_with_events.snirf';
-out_hb   = '/Users/divijnalge/Library/CloudStorage/OneDrive-NanyangTechnologicalUniversity/ntu/Brain Norm/Brain_Norm_Files/snirf_files_with_correct_stim_events_BNDY/preproc_for_mne/sub-bndy_ses-tp1_task-arith_run-1_nirs_with_events_preproc_hb.snirf';
+in_snirf = 'sub-bndy_ses-tp1_task-arith_run-1_nirs_with_events.snirf';
+out_hb   = 'output_preproc_hb.snirf';
 
 % PruneChannels
 dRange      = [5e-3 9e-1];
@@ -85,7 +85,7 @@ fprintf('Running hmrR_PruneChannels...\n');
 
 mlActAuto = hmrR_PruneChannelsPlus_equalized( ...
     data, probe, mlActMan, tIncMan, windowSec, ...
-    hpf_prune,lpf_prune,ScanQualityThresh,SCIThresh,PSPThresh, dRange, SNRthresh, SDRange);
+    hpf_prune,lpf_prune,ScanQualityThresh,SCIThresh,PSPThresh, dRange, SNRthresh, SDrange);
 
 
 % mlActAuto is a cell array in newer Homer3 versions.

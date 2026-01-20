@@ -138,8 +138,14 @@ for i = 1:size(dcRuns,2)-1
 end
 
 data_y.dataTimeSeries = foo_y;
+disp("size of data_y.dataTimeSeries : ");
+disp(size(data_y.dataTimeSeries));
 data_y.time = foo_t;
+disp("size of data_y.time ");
+disp(size(data_y.time));
 data_y.measurementList = dcRuns{1}.measurementList;
+disp("size of data_y.measurementList");
+disp(size(data_y.measurementList));
 
 % concatenate stims
 for j = 1:size(stimRuns{1},2) % across conditions
@@ -189,7 +195,12 @@ end
 tIncAuto{1} = foo_tIncAutoRuns;
 Aaux =  foo_AauxRuns;
 % get mlActRuns from one of the runs 
+disp('(Inside hmrS_GLM.m) The size of the mlActRuns{1} is:');
+disp(size(mlActRuns{1}));
 mlActAuto{1} = cell2mat(mlActRuns{1});
+
+disp('(Inside hmrS_GLM.m) The size of the mlActAuto{1} is:');
+disp(size(mlActAuto{1}));
 % #### end ####
 
 
@@ -213,6 +224,8 @@ t = snirf.GetTimeCombined();
 s = snirf.GetStims(t);
 nTrials = repmat({zeros(1, size(s,2))}, length(data_y), 1);
 
+
+
 for iBlk=1:length(data_y)
     
     data_yavg(iBlk)    = DataClass();
@@ -223,54 +236,45 @@ for iBlk=1:length(data_y)
     
     y      = data_y(iBlk).GetDataTimeSeries('reshape');
     t      = data_y(iBlk).GetTime();
-    ml     = data_y(iBlk).GetMeasListSrcDetPairs('reshape');
+    ml     = data_y(iBlk).GetMeasListSrcDetPairs('reshape'); %46 x 2
+
+    disp('(Inside hmrS_GLM.m) The size of the ml is:');
+    disp(size(ml));
+
+    %fprintf("size of ml = %d\n", size(ml))
 
     SrcPos = probe.GetSrcPos();
     DetPos = probe.GetDetPos();
     if isempty(mlActAuto{iBlk})
         mlActAuto{iBlk} = ones(size(ml,1),1);
     end
-    mlAct = mlActAuto{iBlk};
 
-    % ---------------- FIX: align mlAct length to ml ----------------
-    mlAct = mlAct(:);                 % force column vector
-    nML = size(ml,1);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Fixing bug within hmrS_GLM.m
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %---------START--------------------
 
-    % Case A: ml has duplicate Src-Det entries (common when 2 wavelengths exist)
-    % Reduce ml to unique Src-Det pairs and keep matching mlAct if it was per-ml.
-    [mlU, ia] = unique(ml, 'rows', 'stable');
-    if size(mlU,1) ~= size(ml,1)
-        % If data is already per-unique-channel (common for concentration),
-        % ml should also be unique to avoid mismatched indexing.
-        ml = mlU;
+    % mlAct = mlActAuto{iBlk}; 92 x 4 
+  
 
-        % If mlAct was originally per measurement (same length as old ml), shrink it.
-        if length(mlAct) == nML
-            mlAct = mlAct(ia);
-        end
-    end
+    % mlActAuto{iBlk} - 92 x 4; ml - 46 x 2
+    % mlAct_Initialize will remove the wavelenth 2 data from
+    % mlActAuto{iBlk} and make it 46 x 4
+    mlActMatrix = mlAct_Initialize(mlActAuto{iBlk}, ml);
 
-    % Recompute nML after potential change
-    nML = size(ml,1);
 
-    % Case B: mlAct length still doesn't match ml length
-    if length(mlAct) ~= nML
-        % If ml is an integer multiple of mlAct (e.g., 92 vs 46), replicate
-        if mod(nML, length(mlAct)) == 0
-            rep = nML / length(mlAct);
-            mlAct = repelem(mlAct, rep);
-        else
-            % Last resort: truncate/pad conservatively (pad with 0 = inactive)
-            mlAct = mlAct(1:min(end, nML));
-            if length(mlAct) < nML
-                mlAct(end+1:nML,1) = 0;
-            end
-        end
-    end
-    % ---------------- END FIX ----------------
+    % Extracts the 3rd column of the mlActMatrix (kept = 1; pruned = 0) so
+    % mlAct - 46 x 1
+    mlAct = mlAct_Matrix2BinaryVector(mlActMatrix, ml);
 
-    fprintf('DEBUG: size(y,3)=%d, size(ml,1)=%d, length(mlAct)=%d\n', size(y,3), size(ml,1), length(mlAct));
+    disp('(Inside hmrS_GLM.m) The size of the mlAct is:');
+    disp(size(mlAct));
 
+    disp('(Inside hmrS_GLM.m) mlAct is:');
+    disp(mlAct);
+
+    %---------END--------------------
 
     if isempty(tIncAuto{iBlk})
         tIncAuto{iBlk} = ones(length(t),1);
@@ -293,12 +297,28 @@ for iBlk=1:length(data_y)
     % Find corresponding short separation channel for every channel
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     lst = 1:size(ml,1);
+    disp(' (Inside hmrS_GLM.m) The size of the lst is:');
+    disp(size(lst));
     rhoSD = zeros(length(lst),1);
     posM = zeros(length(lst),3);
     for iML = 1:length(lst)
         rhoSD(iML) = sum((SrcPos(ml(lst(iML),1),:) - DetPos(ml(lst(iML),2),:)).^2).^0.5;
         posM(iML,:) = (SrcPos(ml(lst(iML),1),:) + DetPos(ml(lst(iML),2),:)) / 2;
     end
+
+    disp('(Inside hmrS_GLM.m) size of mlAct(lst):');
+    disp(size(mlAct(lst)));
+
+    disp('(Inside hmrS_GLM.m) mlAct(lst):');
+    disp(mlAct(lst));
+
+    disp('(Inside hmrS_GLM.m) size of rhoSD<=rhoSD_ssThresh is:');
+    disp(size(rhoSD<=rhoSD_ssThresh));
+
+    disp('(Inside hmrS_GLM.m) size of rhoSD<=rhoSD_ssThresh & mlAct(lst)==1 is:');
+    disp(size(rhoSD<=rhoSD_ssThresh & mlAct(lst)==1));
+
+
     lstSS = lst(find(rhoSD<=rhoSD_ssThresh & mlAct(lst)==1));
     
     if isempty(lstSS) || (isempty(Aaux) && flagNuisanceRMethod == 3)
@@ -372,6 +392,13 @@ for iBlk=1:length(data_y)
         gstd = paramsBasis(2);
         
         nB = floor((trange(2)-trange(1))/gms)-1;
+
+        disp("(Inside hmrS_GLM.m) nB:");
+        disp(nB)
+
+        disp("(Inside hmrS_GLM.m) gms:");
+        disp(gms) 
+
         tbasis = zeros(ntHRF,nB);
         for b=1:nB
             tbasis(:,b) = exp(-(tHRF-(trange(1)+b*gms)).^2/(2*gstd.^2));
@@ -698,6 +725,7 @@ for iBlk=1:length(data_y)
             
             % #### concetanted final At for session: get separate regressor for the aux for each run ####
             naux = (size(At,2)-size(dA,2));
+
             fooAt = zeros(size(At,1),naux*size(dcRuns,2));
             
             fooAt(1:size(dcRuns{1}.dataTimeSeries,1),1:naux) =  At(1:size(dcRuns{1}.dataTimeSeries,1),size(dA,2)+1:end);
@@ -708,6 +736,22 @@ for iBlk=1:length(data_y)
             end
             
             At = [At(:,1:size(dA,2)) fooAt];
+
+            % ---- FIX beta_label for per-run expanded ShortSep ----
+            if iSS == 1 && conc == 1
+                nHRF  = size(dA,2);       % 132
+                nRuns = size(dcRuns,2);   % 4
+
+                % Only apply when the last nuisance label is ShortSep
+                if length(beta_label) == nHRF + 1 && strcmp(beta_label{end}, 'ShortSep')
+                    % Replace the single ShortSep label with run-specific ones
+                    beta_label = [beta_label(1:nHRF), ...
+                                 arrayfun(@(r) sprintf('ShortSep_run%d', r), 1:nRuns, 'UniformOutput', false)];
+                end
+            end
+
+            % ---- END FIX ----
+
             % #### end ####
                             
             

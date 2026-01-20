@@ -68,8 +68,8 @@ groups = containers.Map('KeyType','char','ValueType','any');
 for k = 1:numel(F)
     fname = F(k).name;
 
-    sesTok  = regexp(fname, 'ses-([^_]+)', 'tokens', 'once');
-    taskTok = regexp(fname, 'task-([^_]+)', 'tokens', 'once');
+    sesTok  = regexp(fname, 'ses-([^_]+)', 'tokens', 'once'); %session tp1
+    taskTok = regexp(fname, 'task-([^_]+)', 'tokens', 'once'); %arith
 
     if isempty(sesTok);  ses = 'ses-NA';  else; ses  = ['ses-' sesTok{1}];  end
     if isempty(taskTok); task = 'task-NA'; else; task = ['task-' taskTok{1}]; end
@@ -131,7 +131,7 @@ for g = 1:numel(groupKeys)
         stim  = snirf_in.stim;
 
         if isempty(probe.wavelengths)
-            probe.wavelengths = [760 850];
+            probe.wavelengths = [751 843];
         end
 
         if isempty(probe_first)
@@ -174,8 +174,12 @@ for g = 1:numel(groupKeys)
         %% BANDPASS
         dod_filt = hmrR_BandpassFilt(dod_wavelet, hpf, lpf);
 
-        %% OD -> CONC (HbO/HbR)
+        %% OD -> CONC (HbO/HbR/HbT)
         dc = hmrR_OD2Conc(dod_filt, probe, ppf);
+
+        % data - 1740 x 92
+        % dc - 1740 x 138
+        % 46 src-det pairs × 3 signals(HbO/HbR/HbT) = 138
 
         %% ---------------- RUN-LEVEL GLM (hmrR_GLM) ----------------
         fprintf('   Running run-level GLM (hmrR_GLM)...\n');
@@ -210,14 +214,6 @@ for g = 1:numel(groupKeys)
 
     %% ---------------- SUBJECT/SESSION GLM (hmrS_GLM) ----------------
 
-    % Example for run r (adjust indexing to your variables)
-    ml = dcRuns{r}.GetMeasListSrcDetPairs('reshape');   % rows might be 92
-    mlAct_pair = cell2mat(mlActRuns{r});               % currently 46
-
-    [pairList, ~, pairIdx] = unique(ml(:,1:2), 'rows', 'stable');
-    mlAct_full = mlAct_pair(pairIdx);                 % now 92
-
-    mlActRuns{r} = {mlAct_full};  % keep Homer3's "cell-of-cell" style
 
     fprintf('\n*** Running subject/session-level GLM (hmrS_GLM) for group: %s ***\n', key);
 
@@ -225,6 +221,10 @@ for g = 1:numel(groupKeys)
         hmrS_GLM(dcRuns, stimRuns, probe_first, mlActRuns, AauxRuns, tIncAutoRuns, rcMapRuns, ...
                  trange, glmSolveMethod, idxBasis, paramsBasis, ...
                  rhoSD_ssThresh, flagNuisanceRMethod, driftOrder, c_vector);
+
+    disp(length(hmrstats_sess.beta_label))
+    disp(size(hmrstats_sess.tval,1))
+    disp(hmrstats_sess.beta_label(end-3:end))
 
     out_glm_sess_csv = fullfile(out_dir, [key '_glm_session.csv']);
     export_hmrstats_csv(hmrstats_sess, out_glm_sess_csv);
@@ -249,19 +249,19 @@ function export_hmrstats_csv(hmrstats, out_csv)
     [nBetas, nCh, nHb] = size(tval);
 
     % --- FIX: make beta_label length match nBetas (pad/trim) ---
-    if isempty(beta_label)
-        beta_label = cell(nBetas,1);
-    end
-
-    if numel(beta_label) < nBetas
-        warning('beta_label shorter than tval rows (%d < %d). Padding labels.', numel(beta_label), nBetas);
-        for k = (numel(beta_label)+1):nBetas
-            beta_label{k} = sprintf('Regressor_%03d', k);
-        end
-    elseif numel(beta_label) > nBetas
-        warning('beta_label longer than tval rows (%d > %d). Trimming labels.', numel(beta_label), nBetas);
-        beta_label = beta_label(1:nBetas);
-    end
+    % if isempty(beta_label)
+    %     beta_label = cell(nBetas,1);
+    % end
+    % 
+    % if numel(beta_label) < nBetas
+    %     warning('beta_label shorter than tval rows (%d < %d). Padding labels.', numel(beta_label), nBetas);
+    %     for k = (numel(beta_label)+1):nBetas
+    %         beta_label{k} = sprintf('Regressor_%03d', k);
+    %     end
+    % elseif numel(beta_label) > nBetas
+    %     warning('beta_label longer than tval rows (%d > %d). Trimming labels.', numel(beta_label), nBetas);
+    %     beta_label = beta_label(1:nBetas);
+    % end
     % --- end FIX ---
 
 
@@ -347,7 +347,11 @@ function plot_session_mean_hrf(data_yavg, tag, out_dir)
         xlabel('Time (s)');
         ylabel('Concentration (a.u.)');
         legend(compose('Cond %d',1:nCond),'Location','best');
-        title([tag ' | mean HRF across channels | ' HbNames{hb}]);
+        title(sprintf('%s | mean HRF across channels | %s', tag, HbNames{hb}), ...
+      'Interpreter','none');
+
+
+        %title([tag ' | mean HRF across channels | ' HbNames{hb}]);
 
         out_png = fullfile(out_dir, [tag '_' HbNames{hb} '_meanHRF.png']);
         saveas(gcf, out_png);
