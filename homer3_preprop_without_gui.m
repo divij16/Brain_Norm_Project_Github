@@ -6,7 +6,7 @@
 clear; clc;
 
 %% ---------------- 0) USER SETTINGS -------------------------
-input_dir = '/Users/divijnalge/Library/CloudStorage/OneDrive-NanyangTechnologicalUniversity/ntu/Brain Norm/Brain_Norm_Files/snirf_files_with_correct_stim_events_BNDY';
+input_dir = '/Users/divijnalge/Library/CloudStorage/OneDrive-NanyangTechnologicalUniversity/ntu/Brain Norm/Brain_Norm_Files/fNIRS preproc/BN_KG/ses-tp1visuowm/nirs-homer3';
 
 out_dir = fullfile(input_dir, 'preproc_for_mne');
 if ~exist(out_dir, 'dir')
