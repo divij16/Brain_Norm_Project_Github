@@ -58,6 +58,11 @@ end
 
 fprintf('Found %d SNIRF files.\n', numel(snirf_files));
 
+% Initialize once (before looping runs)
+mlAct_ALL = false(92,1);  % logical is better than zeros
+nRuns = numel(snirf_files);
+mlAct_by_run = false(92,nRuns); % store per-run masks (run x 92)
+
 %% ---------------- 2) LOOP OVER FILES -----------------------
 for k = 1:numel(snirf_files)
 
@@ -106,6 +111,15 @@ for k = 1:numel(snirf_files)
             dRange, SNRthresh, SDRange);
 
         pruning_compare = mlActAuto{1} == mlActAuto_2{1}; %#ok<NASGU>
+
+        mask_r = (mlActAuto_2{1}(:,3) == 1);   % 92x1 logical
+
+        % OR across runs (your earlier idea)
+        mlAct_ALL = mlAct_ALL | mask_r;
+    
+        % append/store this run’s mask as a row
+        mlAct_by_run(:,k) = mask_r(:).;    
+
 
         %% ---------------- 5) INTENSITY → OD -----------------------
         fprintf('Running hmrR_Intensity2OD...\n');
@@ -156,3 +170,20 @@ for k = 1:numel(snirf_files)
 end
 
 fprintf('\nAll done. Outputs are in:\n  %s\n', out_dir);
+
+% make sure it's logical
+mlAct_ALL = logical(mlAct_ALL);
+
+fprintf('mlAct_ALL = [');
+fprintf('%d, ', mlAct_ALL(1:end-1));
+fprintf('%d]\n', mlAct_ALL(end));
+
+for k = 1:nRuns
+    
+    mlAct_r = logical(mlAct_);
+
+    fprintf('mlAct_ALL = [');
+    fprintf('%d, ', mlAct_ALL(1:end-1));
+    fprintf('%d]\n', mlAct_ALL(end));
+
+
