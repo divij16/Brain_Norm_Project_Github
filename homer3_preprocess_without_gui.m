@@ -6,7 +6,7 @@
 clear; clc;
 
 %% ---------------- 0) USER SETTINGS -------------------------
-input_dir = '/Users/divijnalge/Library/CloudStorage/OneDrive-NanyangTechnologicalUniversity/ntu/Brain Norm/Brain_Norm_Files/preprocessed/tp1arith/sub-bndy';
+input_dir = '/Users/divijnalge/Library/CloudStorage/OneDrive-NanyangTechnologicalUniversity/ntu/Brain Norm/Brain_Norm_Files/preprocessed/tp1arith/sub-bndy/swapped_files';
 
 out_dir = fullfile(input_dir, 'preproc_for_mne');
 if ~exist(out_dir, 'dir')
