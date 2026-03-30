@@ -7,7 +7,14 @@
 clear; clc;
 
 %% ---------------- 0) USER SETTINGS -------------------------
-input_dir = '/Users/divijnalge/Library/CloudStorage/OneDrive-NanyangTechnologicalUniversity/ntu/Brain Norm/Brain_Norm_Files/preprocessed/tp1arith/sub-bndy/swapped_files';
+input_dir = uigetdir;
+
+if input_dir == 0
+    disp('No folder selected');
+else
+    disp(['Selected folder: ', input_dir]);
+end
+%input_dir = '/Users/divijnalge/Library/CloudStorage/OneDrive-NanyangTechnologicalUniversity/ntu/Brain Norm/Brain_Norm_Files/preprocessed/tp1arith/sub-bndy/swapped_files';
 
 out_dir = fullfile(input_dir, 'mlAct_masks');
 if ~exist(out_dir, 'dir')
@@ -84,19 +91,19 @@ for k = 1:nRuns
         end
 
         %% ---------------- PRUNE CHANNELS ----------------------
-        fprintf('Running hmrR_PruneChannels...\n');
+        fprintf('Running hmrR_PruneChannels_equalized...\n');
 
         % Choose ONE of the two below.
         % Option A: basic pruning
-        mlActAuto_2 = hmrR_PruneChannels( ...
-            data, probe, mlActMan, tIncMan, ...
-            dRange, SNRthresh, SDRange);
+        %mlActAuto_2 = hmrR_PruneChannels( ...
+        %    data, probe, mlActMan, tIncMan, ...
+        %    dRange, SNRthresh, SDRange);
 
         % Option B: equalized pruning (uncomment if you want this instead)
-        % mlActAuto_2 = hmrR_PruneChannelsPlus_equalized( ...
-        %     data, probe, mlActMan, tIncMan, windowSec, ...
-        %     hpf_prune, lpf_prune, ScanQualityThresh, SCIThresh, PSPThresh, ...
-        %     dRange, SNRthresh, SDRange);
+        mlActAuto_2 = hmrR_PruneChannelsPlus_equalized( ...
+             data, probe, mlActMan, tIncMan, windowSec, ...
+             hpf_prune, lpf_prune, ScanQualityThresh, SCIThresh, PSPThresh, ...
+             dRange, SNRthresh, SDRange);
 
         mask_r = logical(mlActAuto_2{1}(:,3) == 1);   % Nx1 logical
 

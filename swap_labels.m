@@ -1,7 +1,14 @@
 clear; clc;
 
 %% ---------------- 0) USER SETTINGS -------------------------
-input_dir = '/Users/divijnalge/Library/CloudStorage/OneDrive-NanyangTechnologicalUniversity/ntu/Brain Norm/Brain_Norm_Files/preprocessed/tp1arith/sub-bndy';
+input_dir = uigetdir;
+
+if input_dir == 0
+    disp('No folder selected');
+else
+    disp(['Selected folder: ', input_dir]);
+end
+%input_dir = '/Users/divijnalge/Library/CloudStorage/OneDrive-NanyangTechnologicalUniversity/ntu/Brain Norm/Brain_Norm_Files/preprocessed/tp1arith/sub-bnkg';
 
 out_dir = fullfile(input_dir, 'swapped_files');
 if ~exist(out_dir, 'dir')
